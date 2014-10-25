@@ -73,12 +73,12 @@ public final class Region {
 		for (int r = 0; r < image.rows(); ++r)
 			for (int c = 0; c < image.cols(); ++c)
 				if (!interestingColors.contains(image.at(r, c)))
-					processed.set(c * image.rows() + r);
+					processed.set(pixelToBitIndex(image, r, c));
 
 		ImmutableSet.Builder<Region> builder = ImmutableSet.builder();
 		int lastClearBit = 0;
 		while ((lastClearBit = processed.nextClearBit(lastClearBit)) != imageSize) {
-			int fillCol = lastClearBit / image.rows(), fillRow = lastClearBit % image.rows();
+			int fillCol = bitIndexToCol(image, lastClearBit), fillRow = bitIndexToRow(image, lastClearBit);
 			int color = image.at(fillRow, fillCol);
 			List<Point> points = new ArrayList<>();
 
@@ -87,24 +87,33 @@ public final class Region {
 			frontier.push(new Point(fillRow, fillCol));
 			while (!frontier.isEmpty()) {
 				Point p = frontier.pop();
-				int bitIndex = p.row() * image.rows() + p.col();
+				int bitIndex = pixelToBitIndex(image, p.row(), p.col());
 				if (processed.get(bitIndex)) continue;
-				if (image.at(p.x, p.y) != color) continue;
+				if (image.at(p.row(), p.col()) != color) continue;
 
 				points.add(p);
 				processed.set(bitIndex);
 				for (int[] n : NEIGHBORHOOD) {
-					int nx = p.x + n[0], ny = p.y + n[1];
-					int nBitIndex = nx + ny * image.rows();
-					if (0 <= nx && nx < image.rows() && 0 <= ny && ny < image.cols()
+					int nr = p.row() + n[0], nc = p.col() + n[1];
+					int nBitIndex = pixelToBitIndex(image, nr, nc);
+					if (0 <= nr && nr < image.rows() && 0 <= nc && nc < image.cols()
 							&& !processed.get(nBitIndex))
-						frontier.push(new Point(nx, ny));
+						frontier.push(new Point(nr, nc));
 				}
 			}
 			assert !points.isEmpty();
 			builder.add(new Region(color, points));
 		}
 		return builder.build();
+	}
+	private static int pixelToBitIndex(Image img, int row, int col) {
+		return row * img.cols() + col;
+	}
+	private static int bitIndexToRow(Image img, int bitIndex) {
+		return bitIndex / img.cols();
+	}
+	private static int bitIndexToCol(Image img, int bitIndex) {
+		return bitIndex % img.cols();
 	}
 
 	public int color() {
@@ -116,7 +125,7 @@ public final class Region {
 	}
 
 	public Point centroid() {
-		return new Point((int)xStats.getAverage(), (int)yStats.getAverage());
+		return new Point((int)yStats.getAverage(), (int)xStats.getAverage());
 	}
 
 	public Rectangle boundingBox() {
@@ -136,9 +145,9 @@ public final class Region {
 
 	public static final class Point {
 		public final int x, y;
-		public Point(int x, int y) {
-			this.x = x;
-			this.y = y;
+		public Point(int row, int col) {
+			this.x = col;
+			this.y = row;
 		}
 		//these are mostly for method references (field refs don't exist)
 		public int x() {
