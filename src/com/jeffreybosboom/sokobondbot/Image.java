@@ -1,5 +1,6 @@
 package com.jeffreybosboom.sokobondbot;
 
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.stream.IntStream;
@@ -33,5 +34,18 @@ public final class Image {
 	public int at(int row, int col) {
 		int[] x = pixels[row];
 		return x[col];
+	}
+	public IntStream pixels() {
+		return Arrays.stream(pixels).flatMapToInt(Arrays::stream);
+	}
+
+	public Image subimage(Rectangle region) {
+		return subimage(region.y, region.x, region.height, region.width);
+	}
+	public Image subimage(int row, int col, int rows, int cols) {
+		int[][] subpixels = new int[rows][cols];
+		for (int r = row; r < row + rows; ++r)
+			System.arraycopy(pixels[r], col, subpixels[r], 0, cols);
+		return new Image(subpixels);
 	}
 }

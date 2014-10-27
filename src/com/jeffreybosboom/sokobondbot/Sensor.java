@@ -5,14 +5,19 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
 import com.jeffreybosboom.region.Region;
+import com.jeffreybosboom.sokobondbot.State.Element;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
 import java.io.File;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.function.Function;
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import javax.imageio.ImageIO;
@@ -56,7 +61,25 @@ public final class Sensor {
 			int row = rows.indexOf(rowRanges.rangeContaining(c.row()));
 			int col = cols.indexOf(colRanges.rangeContaining(c.col()));
 			System.out.println(row +" "+col);
+
 		}
+	}
+
+	/**
+	 * Returns the element of the atom in the given square, or null if the
+	 * square is empty.
+	 * @param square a grid square
+	 * @return the element of the atom in the given square, or null if empty
+	 */
+	private static Element recognizeElement(Image square) {
+		Map<Integer, Long> histogram = square.pixels().boxed()
+				.filter(p -> Element.fromColor(p) != null)
+				.collect(groupingBy(Function.identity(), counting()));
+		Integer mostFrequentElementColor = histogram.entrySet().stream()
+				.max(Comparator.comparing(Entry::getValue))
+				.map(Entry::getKey)
+				.orElse(SQUARE_GRAY);
+		return Element.fromColor(mostFrequentElementColor);
 	}
 
 	public static void main(String[] args) throws IOException {
