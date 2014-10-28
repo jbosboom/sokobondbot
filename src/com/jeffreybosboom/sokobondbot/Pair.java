@@ -41,6 +41,14 @@ public final class Pair<A, B> {
 		return new Pair<>(a, b);
 	}
 
+	public A first() {
+		return first;
+	}
+
+	public B second() {
+		return second;
+	}
+
 	public Pair<B, A> opposite() {
 		return new Pair<>(second, first);
 	}
