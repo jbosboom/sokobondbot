@@ -14,7 +14,10 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.math.RoundingMode;
+import java.util.ArrayDeque;
 import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -39,6 +42,12 @@ public final class Sensor {
 	private int squareSize, intersquareSpace, totalRows, totalCols;
 	private Sensor(List<BufferedImage> images) {
 		this.images = ImmutableList.copyOf(images.stream().map(Image::new).iterator());
+	}
+
+	public State sense() {
+		determineBoundary();
+		determinePlayfield();
+		return null;
 	}
 
 	private static final Set<Integer> BOUNDARY_COLORS = Stream.of(
@@ -78,6 +87,36 @@ public final class Sensor {
 			throw new RuntimeException(interrowSpace + " " + intercolSpace);
 		this.intersquareSpace = interrowSpace;
 		System.out.println(intersquareSpace);
+	}
+
+	private static final int[][] NEIGHBORHOOD = {
+		{-1, 0}, {1, 0}, {0, -1}, {0, 1}
+	};
+	private void determinePlayfield() {
+		//Scan across row 1 for the first cell not in the boundary that's to the
+		//right of a boundary cell.
+		Set<Pair<Integer, Integer>> firstRow = boundary.stream().filter(p -> p.first == 1).collect(toSet());
+		Pair<Integer, Integer> root = firstRow.stream()
+				.map(p -> p.map(Function.identity(), c -> c + 1))
+				.filter(p -> !firstRow.contains(p))
+				.sorted(Comparator.comparingInt(Pair::second))
+				.findAny().get();
+		System.out.println(root);
+
+		//Flood fill to find the playfield squares.
+		Set<Pair<Integer, Integer>> playfield = new HashSet<>();
+		Deque<Pair<Integer, Integer>> frontier = new ArrayDeque<>();
+		playfield.add(root);
+		frontier.push(root);
+		while (!frontier.isEmpty()) {
+			Pair<Integer, Integer> p = frontier.pop();
+			for (int[] n : NEIGHBORHOOD) {
+				Pair<Integer, Integer> q = new Pair<>(p.first() + n[0], p.second() + n[1]);
+				if (!boundary.contains(q) && playfield.add(q))
+					frontier.push(q);
+			}
+		}
+		System.out.println(playfield.size());
 	}
 
 	private int pixelToRow(int rowPixel) {
@@ -141,6 +180,6 @@ public final class Sensor {
 
 	public static void main(String[] args) throws IOException {
 		BufferedImage image = ImageIO.read(new File("C:\\Users\\jbosboom\\Pictures\\Steam Unsorted\\290260_2014-10-23_00001.png"));
-		new Sensor(ImmutableList.of(image)).determineBoundary();
+		new Sensor(ImmutableList.of(image)).sense();
 	}
 }
