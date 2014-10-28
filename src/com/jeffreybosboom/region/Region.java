@@ -135,12 +135,12 @@ public final class Region {
 
 	public Range<Integer> rowSpan() {
 		Rectangle boundingBox = boundingBox();
-		return Range.closedOpen(boundingBox.y, boundingBox.y + boundingBox.height);
+		return Range.closed(boundingBox.y, boundingBox.y + boundingBox.height);
 	}
 
 	public Range<Integer> colSpan() {
 		Rectangle boundingBox = boundingBox();
-		return Range.closedOpen(boundingBox.x, boundingBox.x + boundingBox.width);
+		return Range.closed(boundingBox.x, boundingBox.x + boundingBox.width);
 	}
 
 	public static final class Point {
