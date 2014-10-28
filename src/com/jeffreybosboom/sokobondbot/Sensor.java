@@ -1,6 +1,7 @@
 package com.jeffreybosboom.sokobondbot;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableRangeSet;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
@@ -34,6 +35,7 @@ import javax.imageio.ImageIO;
 public final class Sensor {
 	private final ImmutableList<Image> images;
 	private ImmutableSet<Pair<Integer, Integer>> boundary;
+	private ImmutableRangeSet<Integer> rowRanges, colRanges;
 	private int squareSize, intersquareSpace, totalRows, totalCols;
 	private Sensor(List<BufferedImage> images) {
 		this.images = ImmutableList.copyOf(images.stream().map(Image::new).iterator());
@@ -51,25 +53,23 @@ public final class Sensor {
 		Rectangle prototype = boundaries.iterator().next().boundingBox();
 		assert !boundaries.stream().filter(r -> r.boundingBox().width != prototype.width).findAny().isPresent() : "squares not all same size";
 		this.squareSize = prototype.width + 1;
-
-		RangeSet<Integer> rowRanges = TreeRangeSet.create();
-		boundaries.stream().map(Region::rowSpan).forEachOrdered(rowRanges::add);
-		List<Range<Integer>> rows = rowRanges.asRanges().stream().collect(toList());
-		RangeSet<Integer> colRanges = TreeRangeSet.create();
-		boundaries.stream().map(Region::colSpan).forEachOrdered(colRanges::add);
-		List<Range<Integer>> cols = colRanges.asRanges().stream().collect(toList());
+		ImmutableRangeSet.Builder<Integer> rowRangesBuilder = ImmutableRangeSet.builder();
+		boundaries.stream().map(Region::rowSpan).distinct().forEachOrdered(rowRangesBuilder::add);
+		this.rowRanges = rowRangesBuilder.build();
+		ImmutableRangeSet.Builder<Integer> colRangesBuilder = ImmutableRangeSet.builder();
+		boundaries.stream().map(Region::colSpan).distinct().forEachOrdered(colRangesBuilder::add);
+		this.colRanges = colRangesBuilder.build();
 
 		ImmutableSet.Builder<Pair<Integer, Integer>> boundaryBuilder = ImmutableSet.builder();
-		for (Region square : boundaries) {
-			Region.Point c = square.centroid();
-			int row = rows.indexOf(rowRanges.rangeContaining(c.row()));
-			int col = cols.indexOf(colRanges.rangeContaining(c.col()));
-			boundaryBuilder.add(new Pair<>(row, col));
-		}
+		boundaries.stream().map(Region::centroid)
+				.map(this::pointToGrid)
+				.forEachOrdered(boundaryBuilder::add);
 		this.boundary = boundaryBuilder.build();
-		this.totalRows = rows.size();
-		this.totalCols = cols.size();
+		this.totalRows = rowRanges.asRanges().size();
+		this.totalCols = colRanges.asRanges().size();
 
+		List<Range<Integer>> rows = rowRanges.asRanges().asList();
+		List<Range<Integer>> cols = colRanges.asRanges().asList();
 		int puzzleHeight = rows.get(rows.size()-1).upperEndpoint() - rows.get(0).lowerEndpoint() + 1;
 		int interrowSpace = IntMath.divide(puzzleHeight - totalRows * squareSize, totalRows - 1, RoundingMode.UNNECESSARY);
 		int puzzleWidth = cols.get(cols.size()-1).upperEndpoint() - cols.get(0).lowerEndpoint() + 1;
@@ -78,6 +78,16 @@ public final class Sensor {
 			throw new RuntimeException(interrowSpace + " " + intercolSpace);
 		this.intersquareSpace = interrowSpace;
 		System.out.println(intersquareSpace);
+	}
+
+	private int pixelToRow(int rowPixel) {
+		return rowRanges.asRanges().asList().indexOf(rowRanges.rangeContaining(rowPixel));
+	}
+	private int pixelToCol(int colPixel) {
+		return colRanges.asRanges().asList().indexOf(colRanges.rangeContaining(colPixel));
+	}
+	private Pair<Integer, Integer> pointToGrid(Region.Point p) {
+		return new Pair<>(pixelToRow(p.row()), pixelToCol(p.col()));
 	}
 
 	private static final int SQUARE_GRAY = 0xFFF0F0F0;
