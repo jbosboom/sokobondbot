@@ -18,6 +18,7 @@
 
 package com.jeffreybosboom.sokobondbot;
 
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -81,5 +82,15 @@ public final class Pair<A, B> {
 		hash = 67 * hash + Objects.hashCode(this.first);
 		hash = 67 * hash + Objects.hashCode(this.second);
 		return hash;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("(%s, %s)", first, second);
+	}
+
+	public static <A extends Comparable<? super A>, B extends Comparable<? super B>> Comparator<Pair<A, B>> comparator() {
+		return Comparator.comparing((Pair<A, B> p) -> p.first)
+				.thenComparing((Pair<A, B> p) -> p.second);
 	}
 }
