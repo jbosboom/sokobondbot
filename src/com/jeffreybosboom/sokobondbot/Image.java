@@ -45,7 +45,7 @@ public final class Image {
 	public Image subimage(int row, int col, int rows, int cols) {
 		int[][] subpixels = new int[rows][cols];
 		for (int r = row; r < row + rows; ++r)
-			System.arraycopy(pixels[r], col, subpixels[r], 0, cols);
+			System.arraycopy(pixels[r], col, subpixels[r-row], 0, cols);
 		return new Image(subpixels);
 	}
 }
