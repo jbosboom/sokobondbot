@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.function.Function;
 import static java.util.function.Function.identity;
 import java.util.stream.Collector;
 import static java.util.stream.Collectors.collectingAndThen;
@@ -43,10 +42,10 @@ import javax.imageio.ImageIO;
  */
 public final class Sensor {
 	private final ImmutableList<Image> images;
-	private ImmutableSet<Pair<Integer, Integer>> boundary;
+	private ImmutableSortedSet<Coordinate> boundary;
 	private ImmutableRangeSet<Integer> rowRanges, colRanges;
 	private int squareSize, intersquareSpace, totalRows, totalCols;
-	private ImmutableSortedSet<Pair<Integer, Integer>> playfield;
+	private ImmutableSortedSet<Coordinate> playfield;
 	private Sensor(List<BufferedImage> images) {
 		this.images = ImmutableList.copyOf(images.stream().map(Image::new).iterator());
 	}
@@ -77,7 +76,7 @@ public final class Sensor {
 		boundaries.stream().map(Region::colSpan).distinct().forEachOrdered(colRangesBuilder::add);
 		this.colRanges = colRangesBuilder.build();
 
-		ImmutableSet.Builder<Pair<Integer, Integer>> boundaryBuilder = ImmutableSet.builder();
+		ImmutableSortedSet.Builder<Coordinate> boundaryBuilder = ImmutableSortedSet.naturalOrder();
 		boundaries.stream().map(Region::centroid)
 				.map(this::pointToGrid)
 				.forEachOrdered(boundaryBuilder::add);
@@ -97,41 +96,37 @@ public final class Sensor {
 		System.out.println(intersquareSpace);
 	}
 
-	private static final int[][] NEIGHBORHOOD = {
-		{-1, 0}, {1, 0}, {0, -1}, {0, 1}
-	};
+	private static final ImmutableSet<Pair<Integer, Integer>> NEIGHBORHOOD = ImmutableSet.of(
+		new Pair<>(-1, 0), new Pair<>(1, 0), new Pair<>(0, -1), new Pair<>(0, 1)
+	);
 	private void determinePlayfield() {
 		//Scan across row 1 for the first cell not in the boundary that's to the
 		//right of a boundary cell.
-		Set<Pair<Integer, Integer>> firstRow = boundary.stream().filter(p -> p.first == 1).collect(toSet());
-		Pair<Integer, Integer> root = firstRow.stream()
-				.map(p -> p.map(identity(), c -> c + 1))
+		Set<Coordinate> firstRow = boundary.stream().filter(p -> p.row() == 1).collect(toSet());
+		Coordinate root = firstRow.stream()
+				.map(Coordinate::right)
 				.filter(p -> !firstRow.contains(p))
-				.sorted(Comparator.comparingInt(Pair::second))
+				.sorted()
 				.findAny().get();
 		System.out.println(root);
 
 		//Flood fill to find the playfield squares.
-		Set<Pair<Integer, Integer>> playfield = new HashSet<>();
-		Deque<Pair<Integer, Integer>> frontier = new ArrayDeque<>();
+		Set<Coordinate> playfield = new HashSet<>();
+		Deque<Coordinate> frontier = new ArrayDeque<>();
 		playfield.add(root);
 		frontier.push(root);
-		while (!frontier.isEmpty()) {
-			Pair<Integer, Integer> p = frontier.pop();
-			for (int[] n : NEIGHBORHOOD) {
-				Pair<Integer, Integer> q = new Pair<>(p.first() + n[0], p.second() + n[1]);
-				if (!boundary.contains(q) && playfield.add(q))
-					frontier.push(q);
-			}
-		}
-		this.playfield = ImmutableSortedSet.copyOf(Pair.comparator(), playfield);
+		while (!frontier.isEmpty())
+			frontier.pop().neighbors().filter(c -> !boundary.contains(c))
+					.filter(playfield::add) //side-effectful!
+					.forEachOrdered(frontier::push);
+		this.playfield = ImmutableSortedSet.copyOf(playfield);
 	}
 
 	private void constructMolecules() {
-		Map<Pair<Integer, Integer>, Element> elementMap = new TreeMap<>(Pair.comparator());
-		Map<Pair<Integer, Integer>, Integer> freeElectronsMap = new TreeMap<>(Pair.comparator());
-		List<Pair<Integer, Integer>> playerControlledList = new ArrayList<>();
-		for (Pair<Integer, Integer> p : playfield) {
+		Map<Coordinate, Element> elementMap = new TreeMap<>();
+		Map<Coordinate, Integer> freeElectronsMap = new TreeMap<>();
+		List<Coordinate> playerControlledList = new ArrayList<>();
+		for (Coordinate p : playfield) {
 			Rectangle r = gridToPixels(p);
 			List<Image> square = subimages(r).collect(toList());
 			List<Element> possibleElements = square.stream()
@@ -167,12 +162,12 @@ public final class Sensor {
 	private int pixelToCol(int colPixel) {
 		return colRanges.asRanges().asList().indexOf(colRanges.rangeContaining(colPixel));
 	}
-	private Pair<Integer, Integer> pointToGrid(Region.Point p) {
-		return new Pair<>(pixelToRow(p.row()), pixelToCol(p.col()));
+	private Coordinate pointToGrid(Region.Point p) {
+		return Coordinate.at(pixelToRow(p.row()), pixelToCol(p.col()));
 	}
-	private Rectangle gridToPixels(Pair<Integer, Integer> g) {
-		int r = rowRanges.asRanges().asList().get(g.first).lowerEndpoint(),
-				c = colRanges.asRanges().asList().get(g.second).lowerEndpoint();
+	private Rectangle gridToPixels(Coordinate g) {
+		int r = rowRanges.asRanges().asList().get(g.row()).lowerEndpoint(),
+				c = colRanges.asRanges().asList().get(g.col()).lowerEndpoint();
 		return new Rectangle(c, r, squareSize, squareSize);
 	}
 
