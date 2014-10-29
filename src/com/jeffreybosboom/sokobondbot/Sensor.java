@@ -103,9 +103,6 @@ public final class Sensor {
 		System.out.println(intersquareSpace);
 	}
 
-	private static final ImmutableSet<Pair<Integer, Integer>> NEIGHBORHOOD = ImmutableSet.of(
-		new Pair<>(-1, 0), new Pair<>(1, 0), new Pair<>(0, -1), new Pair<>(0, 1)
-	);
 	private void determinePlayfield() {
 		//Scan across row 1 for the first cell not in the boundary that's to the
 		//right of a boundary cell.
