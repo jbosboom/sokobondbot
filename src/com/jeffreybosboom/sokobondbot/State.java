@@ -1,5 +1,11 @@
 package com.jeffreybosboom.sokobondbot;
 
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedMultiset;
+import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Multiset;
+import java.util.Map;
+
 /**
  *
  * @author Jeffrey Bosboom <jbosboom@csail.mit.edu>
@@ -30,5 +36,14 @@ public final class State {
 					return e;
 			return null;
 		}
+	}
+
+	private final ImmutableSortedMap<Coordinate, Element> atoms;
+	private final ImmutableSortedMultiset<Pair<Coordinate, Coordinate>> bonds;
+	private final Coordinate playerAtom;
+	public State(Map<Coordinate, Element> atoms, Multiset<Pair<Coordinate, Coordinate>> bonds, Coordinate playerAtom) {
+		this.atoms = ImmutableSortedMap.copyOf(atoms);
+		this.bonds = ImmutableSortedMultiset.copyOf(Pair.comparator(), bonds);
+		this.playerAtom = playerAtom;
 	}
 }

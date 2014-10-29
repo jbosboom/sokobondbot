@@ -1,9 +1,11 @@
 package com.jeffreybosboom.sokobondbot;
 
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableRangeSet;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Multiset;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
@@ -26,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import static java.util.function.Function.identity;
+import static java.util.function.Predicate.isEqual;
 import java.util.stream.Collector;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.counting;
@@ -154,6 +157,17 @@ public final class Sensor {
 		}
 		if (playerControlledList.size() != 1)
 			throw new RuntimeException("player-controlled: "+playerControlledList);
+
+		Multiset<Pair<Coordinate, Coordinate>> bondsSet = HashMultiset.create();
+		for (Coordinate occupied : elementMap.keySet())
+			occupied.neighbors().forEachOrdered(n -> {
+				int bonds = subimages(intersquarePixels(occupied, n))
+						.map(Sensor::recognizeBonds)
+						.collect(mostCommon(2));
+				bondsSet.add(Pair.sorted(occupied, n), bonds);
+			});
+
+		State state = new State(elementMap, bondsSet, playerControlledList.get(0));
 	}
 
 	private int pixelToRow(int rowPixel) {
@@ -169,6 +183,21 @@ public final class Sensor {
 		int r = rowRanges.asRanges().asList().get(g.row()).lowerEndpoint(),
 				c = colRanges.asRanges().asList().get(g.col()).lowerEndpoint();
 		return new Rectangle(c, r, squareSize, squareSize);
+	}
+	private Rectangle intersquarePixels(Coordinate a, Coordinate b) {
+		if (a.compareTo(b) > 0)
+			return intersquarePixels(b, a);
+		assert a.neighbors().filter(isEqual(b)).count() == 1;
+
+		if (a.row() == 0) { //same row
+			int firstRow = rowRanges.asRanges().asList().get(a.row()).lowerEndpoint();
+			int firstCol = colRanges.asRanges().asList().get(Math.min(a.col(), b.col())).lowerEndpoint() + squareSize;
+			return new Rectangle(firstCol, firstRow, intersquareSpace, squareSize);
+		} else { //same col
+			int firstCol = colRanges.asRanges().asList().get(a.col()).lowerEndpoint();
+			int firstRow = rowRanges.asRanges().asList().get(Math.min(a.row(), b.row())).lowerEndpoint() + squareSize;
+			return new Rectangle(firstCol, firstRow, squareSize, intersquareSpace);
+		}
 	}
 
 	private Stream<Image> subimages(Rectangle rect) {
@@ -238,6 +267,12 @@ public final class Sensor {
 		return Region.connectedComponents(square).stream()
 				.filter(r -> r.color() == BLACK)
 				.count() >= 3;
+	}
+
+	private static int recognizeBonds(Image square) {
+		return (int)Region.connectedComponents(square).stream()
+				.filter(r -> r.color() == BLACK)
+				.count();
 	}
 
 	/**
