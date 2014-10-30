@@ -197,7 +197,7 @@ public final class Sensor {
 			return intersquarePixels(b, a);
 		assert a.neighbors().filter(isEqual(b)).count() == 1;
 
-		if (a.row() == 0) { //same row
+		if (a.row() == b.row()) { //same row
 			int firstRow = rowRanges.asRanges().asList().get(a.row()).lowerEndpoint();
 			int firstCol = colRanges.asRanges().asList().get(Math.min(a.col(), b.col())).lowerEndpoint() + squareSize;
 			return new Rectangle(firstCol, firstRow, intersquareSpace, squareSize);
