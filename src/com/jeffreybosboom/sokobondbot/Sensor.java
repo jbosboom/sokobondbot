@@ -56,15 +56,21 @@ public final class Sensor {
 	private ImmutableRangeSet<Integer> rowRanges, colRanges;
 	private int squareSize, intersquareSpace, totalRows, totalCols;
 	private ImmutableSortedSet<Coordinate> playfield;
+	private State initialState;
 	private Sensor(List<BufferedImage> images) {
 		this.images = ImmutableList.copyOf(images.stream().map(Image::new).iterator());
 	}
 
-	public State sense() {
+	/**
+	 * Parses the images to determine the initial state and the boundary cells
+	 * (which are not stored in the state as they don't change between states).
+	 * @return the initial state and boundary cells
+	 */
+	public Pair<State, Set<Coordinate>> sense() {
 		determineBoundary();
 		determinePlayfield();
 		constructMolecules();
-		return null;
+		return new Pair<>(initialState, boundary);
 	}
 
 	private void determineBoundary() {
@@ -168,7 +174,7 @@ public final class Sensor {
 				bondsSet.add(Pair.sorted(occupied, n), bonds);
 			});
 
-		State state = new State(elementMap, bondsSet, playerControlledList.get(0));
+		this.initialState = new State(elementMap, bondsSet, playerControlledList.get(0));
 	}
 
 	private int pixelToRow(int rowPixel) {
