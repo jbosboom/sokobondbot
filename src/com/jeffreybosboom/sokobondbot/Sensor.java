@@ -172,7 +172,7 @@ public final class Sensor {
 				int bonds = subimages(intersquarePixels(occupied, n))
 						.map(Sensor::recognizeBonds)
 						.collect(mostCommon(2));
-				bondsSet.add(Pair.sorted(occupied, n), bonds);
+				bondsSet.setCount(Pair.sorted(occupied, n), bonds);
 			});
 
 		this.initialState = new State(elementMap, bondsSet, playerControlledList.get(0));

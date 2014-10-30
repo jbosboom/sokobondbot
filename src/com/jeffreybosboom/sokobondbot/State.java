@@ -4,7 +4,9 @@ import com.google.common.collect.ImmutableList;
 import static com.jeffreybosboom.sokobondbot.Utils.toSortedMultiset;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedMultiset;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Multiset;
+import static com.jeffreybosboom.sokobondbot.Utils.toSortedSet;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -124,15 +126,15 @@ public final class State {
 			//free electrons, and they aren't already bonded, bond them.  To
 			//detect nondeterminism, we compute all the bonds, then commit all
 			//at once (if possible).
-			ImmutableSortedMultiset<Pair<Coordinate, Coordinate>> newlyFormedBonds = movedAtoms.stream()
+			ImmutableSortedSet<Pair<Coordinate, Coordinate>> newlyFormedBonds = movedAtoms.stream()
 					.flatMap(c -> c.neighbors()
 					.filter(newAtoms::containsKey) //adjacent?
 					.map(d -> Pair.sorted(c, d)))
 					.filter(p -> !translatedBonds.contains(p)) //not already bonded?
 					.filter(p -> freeElectrons(p.first, newAtoms, translatedBonds) > 0) //free electron?
 					.filter(p -> freeElectrons(p.second, newAtoms, translatedBonds) > 0) //free electron?
-					.collect(toSortedMultiset(Pair.<Coordinate, Coordinate>comparator()));
-			Multiset<Coordinate> atomsFormingBonds = newlyFormedBonds.elementSet().stream()
+					.collect(toSortedSet(Pair.<Coordinate, Coordinate>comparator()));
+			Multiset<Coordinate> atomsFormingBonds = newlyFormedBonds.stream()
 					.flatMap(p -> Stream.of(p.first(), p.second()))
 					.collect(toSortedMultiset());
 			for (Multiset.Entry<Coordinate> e : atomsFormingBonds.entrySet())
