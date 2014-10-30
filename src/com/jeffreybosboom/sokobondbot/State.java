@@ -1,19 +1,18 @@
 package com.jeffreybosboom.sokobondbot;
 
+import static com.jeffreybosboom.sokobondbot.Utils.toSortedMultiset;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedMultiset;
 import com.google.common.collect.Multiset;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collector;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import java.util.stream.Stream;
@@ -105,10 +104,7 @@ public final class State {
 					.collect(toMap(c -> movingAtoms.contains(c) ? c.translate(dir) : c, atoms::get));
 			ImmutableSortedMultiset<Pair<Coordinate, Coordinate>> translatedBonds = bonds.asList().stream()
 					.map(b -> movingAtoms.contains(b.first()) || movingAtoms.contains(b.second) ? new Pair<>(b.first().translate(dir), b.second().translate(dir)) : b)
-					.collect(() -> ImmutableSortedMultiset.orderedBy(Pair.<Coordinate, Coordinate>comparator()),
-							ImmutableSortedMultiset.Builder::add,
-							(left, right) -> left.addAll(right.build()))
-					.build();
+					.collect(toSortedMultiset(Pair.<Coordinate, Coordinate>comparator()));
 			Set<Coordinate> movedAtoms = movingAtoms.stream().map(dir::translate).collect(toSet());
 
 			//If a moved atom is now adjacent to another atom, they both have
@@ -122,10 +118,7 @@ public final class State {
 					.filter(p -> !translatedBonds.contains(p)) //not already bonded?
 					.filter(p -> freeElectrons(p.first, newAtoms, translatedBonds) > 0) //free electron?
 					.filter(p -> freeElectrons(p.second, newAtoms, translatedBonds) > 0) //free electron?
-					.collect(() -> ImmutableSortedMultiset.orderedBy(Pair.<Coordinate, Coordinate>comparator()),
-							ImmutableSortedMultiset.Builder::add,
-							(left, right) -> left.addAll(right.build()))
-					.build();
+					.collect(toSortedMultiset(Pair.<Coordinate, Coordinate>comparator()));
 			Multiset<Coordinate> atomsFormingBonds = newlyFormedBonds.elementSet().stream()
 					.flatMap(p -> Stream.of(p.first(), p.second()))
 					.collect(toSortedMultiset());
@@ -163,23 +156,6 @@ public final class State {
 		}
 		movingAtoms.addAll(molecule);
 		return movingAtoms;
-	}
-
-	private static <T extends Comparable<T>> Collector<T, ImmutableSortedMultiset.Builder<T>, ImmutableSortedMultiset<T>> toSortedMultiset() {
-		return Collector.of(() -> ImmutableSortedMultiset.naturalOrder(),
-							ImmutableSortedMultiset.Builder::add,
-							(left, right) -> left.addAll(right.build()),
-							ImmutableSortedMultiset.Builder::build,
-							Collector.Characteristics.UNORDERED);
-	}
-
-	//TODO: use this
-	private static <T> Collector<T, ImmutableSortedMultiset.Builder<T>, ImmutableSortedMultiset<T>> toSortedMultiset(Comparator<? super T> comparator) {
-		return Collector.of(() -> new ImmutableSortedMultiset.Builder<>(comparator),
-							ImmutableSortedMultiset.Builder::add,
-							(left, right) -> left.addAll(right.build()),
-							ImmutableSortedMultiset.Builder::build,
-							Collector.Characteristics.UNORDERED);
 	}
 
 	@Override
