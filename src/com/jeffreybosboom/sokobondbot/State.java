@@ -61,6 +61,8 @@ public final class State {
 	private State(Map<Coordinate, Element> atoms, Multiset<Pair<Coordinate, Coordinate>> bonds, Coordinate playerAtom, List<Direction> path) {
 		this.atoms = ImmutableSortedMap.copyOf(atoms);
 		this.bonds = ImmutableSortedMultiset.copyOf(Pair.comparator(), bonds);
+		bonds.stream().flatMap(b -> Stream.of(b.first(), b.second()))
+				.forEachOrdered(c -> {assert atoms.containsKey(c) : atoms + " " + bonds;});
 		this.playerAtom = playerAtom;
 		this.path = ImmutableList.copyOf(path);
 	}
