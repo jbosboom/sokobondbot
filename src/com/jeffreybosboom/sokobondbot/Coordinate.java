@@ -37,6 +37,16 @@ public final class Coordinate implements Comparable<Coordinate> {
 		return at(row, col + 1);
 	}
 
+	public Coordinate translate(Direction d) {
+		switch (d) {
+			case UP: return up();
+			case DOWN: return down();
+			case LEFT: return left();
+			case RIGHT: return right();
+		}
+		throw new AssertionError();
+	}
+
 	public Stream<Coordinate> neighbors() {
 		return Stream.of(up(), down(), left(), right());
 	}
