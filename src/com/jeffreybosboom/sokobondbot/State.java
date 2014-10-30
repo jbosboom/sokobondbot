@@ -1,5 +1,6 @@
 package com.jeffreybosboom.sokobondbot;
 
+import com.google.common.collect.ImmutableList;
 import static com.jeffreybosboom.sokobondbot.Utils.toSortedMultiset;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedMultiset;
@@ -52,10 +53,16 @@ public final class State {
 	private final ImmutableSortedMap<Coordinate, Element> atoms;
 	private final ImmutableSortedMultiset<Pair<Coordinate, Coordinate>> bonds;
 	private final Coordinate playerAtom;
+	private final ImmutableList<Direction> path;
 	public State(Map<Coordinate, Element> atoms, Multiset<Pair<Coordinate, Coordinate>> bonds, Coordinate playerAtom) {
+		this(atoms, bonds, playerAtom, ImmutableList.of());
+	}
+
+	private State(Map<Coordinate, Element> atoms, Multiset<Pair<Coordinate, Coordinate>> bonds, Coordinate playerAtom, List<Direction> path) {
 		this.atoms = ImmutableSortedMap.copyOf(atoms);
 		this.bonds = ImmutableSortedMultiset.copyOf(Pair.comparator(), bonds);
 		this.playerAtom = playerAtom;
+		this.path = ImmutableList.copyOf(path);
 	}
 
 	public static int freeElectrons(Coordinate atom, Map<Coordinate, Element> atoms, Multiset<Pair<Coordinate, Coordinate>> bonds) {
@@ -75,6 +82,10 @@ public final class State {
 
 	public boolean isSolved() {
 		return atoms.keySet().stream().noneMatch(a -> freeElectrons(a, atoms, bonds) > 0);
+	}
+
+	public ImmutableList<Direction> path() {
+		return path;
 	}
 
 	private Set<Coordinate> molecule(Coordinate atom) {
@@ -128,7 +139,8 @@ public final class State {
 			ImmutableSortedMultiset<Pair<Coordinate, Coordinate>> newBonds =
 					Stream.concat(translatedBonds.stream(), newlyFormedBonds.stream())
 					.collect(toSortedMultiset(Pair.comparator()));
-			retval.add(new State(newAtoms, newBonds, playerAtom.translate(dir)));
+			retval.add(new State(newAtoms, newBonds, playerAtom.translate(dir),
+					ImmutableList.<Direction>builder().addAll(path).add(dir).build()));
 		}
 		return retval;
 	}

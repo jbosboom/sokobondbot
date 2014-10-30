@@ -49,5 +49,6 @@ public final class Solver {
 		Pair<State, Set<Coordinate>> sensation = new Sensor(imgs).sense();
 		State solution = new Solver(sensation.first, sensation.second).solve();
 		System.out.println(solution);
+		System.out.println(solution.path());
 	}
 }
