@@ -98,13 +98,15 @@ public final class State {
 		Deque<Coordinate> frontier = new ArrayDeque<>();
 		molecule.add(atom);
 		frontier.add(atom);
-		while (!frontier.isEmpty())
-			frontier.pop().neighbors()
-					.map(n -> Pair.sorted(atom, n))
+		while (!frontier.isEmpty()) {
+			Coordinate m = frontier.pop();
+			m.neighbors()
+					.map(n -> Pair.sorted(m, n))
 					.filter(bonds::contains)
-					.map(b -> b.first().equals(atom) ? b.second() : b.first())
+					.map(b -> b.first().equals(m) ? b.second() : b.first())
 					.filter(molecule::add) //side-effecting
 					.forEachOrdered(frontier::push);
+		}
 		return molecule;
 	}
 
