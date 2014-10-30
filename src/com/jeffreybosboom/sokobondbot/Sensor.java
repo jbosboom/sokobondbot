@@ -48,7 +48,8 @@ public final class Sensor {
 	private static final int SQUARE_GRAY = 0xFFF0F0F0;
 	private static final int BLACK = 0xFF000000;
 	private static final Set<Integer> BOUNDARY_COLORS = Stream.of(
-			0xFFFFD452
+			0xFFFFD452, 0xFF909090, 0xFFEEAF1A, 0xFF7AD177, 0xFF60B15D,
+			0xFFFF7373, 0xFFD85555
 	).collect(toSet());
 
 	private final ImmutableList<Image> images;
