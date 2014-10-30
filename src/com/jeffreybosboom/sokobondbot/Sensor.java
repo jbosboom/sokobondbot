@@ -57,7 +57,7 @@ public final class Sensor {
 	private int squareSize, intersquareSpace, totalRows, totalCols;
 	private ImmutableSortedSet<Coordinate> playfield;
 	private State initialState;
-	private Sensor(List<BufferedImage> images) {
+	public Sensor(List<BufferedImage> images) {
 		this.images = ImmutableList.copyOf(images.stream().map(Image::new).iterator());
 	}
 
