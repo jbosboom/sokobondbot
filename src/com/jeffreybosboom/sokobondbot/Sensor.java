@@ -150,7 +150,7 @@ public final class Sensor {
 			if (element == null) continue;
 			elementMap.put(p, element);
 
-			int freeElectrons = square.stream()
+			int freeElectrons = element == Element.HELIUM ? 0 : square.stream()
 					.map(Sensor::recognizeElectrons)
 					.collect(mostCommon(1));
 			if (freeElectrons > element.maxElectrons())
