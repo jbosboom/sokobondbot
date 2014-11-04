@@ -46,6 +46,8 @@ import javax.imageio.ImageIO;
 public final class Sensor {
 	private static final int WHITE = 0xFFFFFFFF;
 	private static final int SQUARE_GRAY = 0xFFF0F0F0;
+	//not quite white!
+	private static final int INTERSQUARE_GRAY = 0xFFFDFDFD;
 	private static final int BLACK = 0xFF000000;
 	private static final Set<Integer> BOUNDARY_COLORS = Stream.of(
 			0xFFFFD452, 0xFF909090, 0xFFEEAF1A, 0xFF7AD177, 0xFF60B15D,
@@ -245,9 +247,11 @@ public final class Sensor {
 	}
 
 	private static int recognizeBonds(Image square) {
+		//Bonds completely partition the intersquare space, so there's one fewer
+		//bond than white regions.
 		return (int)Region.connectedComponents(square).stream()
-				.filter(r -> r.color() == BLACK)
-				.count();
+				.filter(r -> r.color() == INTERSQUARE_GRAY)
+				.count()-1;
 	}
 
 	/**
