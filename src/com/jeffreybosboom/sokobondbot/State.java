@@ -113,7 +113,7 @@ public final class State {
 	public List<State> nextStates(Set<Coordinate> boundary) {
 		List<State> retval = new ArrayList<>(4);
 		Set<Coordinate> molecule = molecule(playerAtom);
-		for (Direction dir : Direction.values()) {
+		next_dir: for (Direction dir : Direction.values()) {
 			Set<Coordinate> movingAtoms = tryTranslate(molecule, dir, boundary);
 			if (movingAtoms == null) continue;
 			//move the moving atoms, and no other atoms
@@ -141,7 +141,8 @@ public final class State {
 					.collect(toSortedMultiset());
 			for (Multiset.Entry<Coordinate> e : atomsFormingBonds.entrySet())
 				if (e.getCount() > freeElectrons(e.getElement(), newAtoms, translatedBonds))
-					throw new RuntimeException("nondeterminism"); //TODO: just ignore it?
+//					throw new RuntimeException("nondeterminism: "+path+" "+dir); //TODO: just ignore it?
+					continue next_dir;
 			ImmutableSortedMultiset<Pair<Coordinate, Coordinate>> newBonds =
 					Stream.concat(translatedBonds.stream(), newlyFormedBonds.stream())
 					.collect(toSortedMultiset(Pair.comparator()));
