@@ -24,6 +24,12 @@ public final class Effector {
 		Rectangle sokobondRect = Windows.getClientAreaByTitle("Sokobond");
 		Robot robot = new Robot();
 
+		//focus on Sokobond window
+		robot.mouseMove(sokobondRect.x, sokobondRect.y);
+		robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+		robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+		Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
+
 		List<BufferedImage> images = new ArrayList<>();
 		for (int i = 0; i < 10; ++i) {
 			images.add(robot.createScreenCapture(sokobondRect));
@@ -36,11 +42,6 @@ public final class Effector {
 
 		Solver solver = new Solver(puzzle.first, puzzle.second);
 		State solution = solver.solve();
-
-		//focus on Sokobond window
-		robot.mouseMove(sokobondRect.x, sokobondRect.y);
-		robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-		robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
 
 		System.out.println(solution.path());
 		for (Direction d : solution.path()) {
