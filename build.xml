@@ -6,6 +6,11 @@ xmlns:if="ant:if" xmlns:unless="ant:unless"
 		<mkdir dir="lib/doc"/>
 		<mkdir dir="lib/src"/>
 
+		<!-- use a local parallelbfs jar if available -->
+		<copy file="../parallelbfs/build/jar/parallelbfs.jar"
+			  tofile="lib/parallelbfs.jar"
+			  failonerror="false" quiet="true" />
+
 		<!-- use a local windowlib jar if available -->
 		<copy file="../windowlib/build/jar/windowlib.jar"
 			  tofile="lib/windowlib.jar"

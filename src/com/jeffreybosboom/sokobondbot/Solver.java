@@ -1,14 +1,14 @@
 package com.jeffreybosboom.sokobondbot;
 
 import com.google.common.collect.ImmutableSortedSet;
+import com.jeffreybosboom.parallelbfs.ParallelBFS;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Queue;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.imageio.ImageIO;
 
 /**
@@ -19,26 +19,17 @@ import javax.imageio.ImageIO;
 public final class Solver {
 	private final ImmutableSortedSet<Coordinate> boundary;
 	//states we've visited or are already in frontier
-	private final Set<State> closed = new HashSet<>();
-	private final Queue<State> frontier = new ArrayDeque<>();
+	private final State initialState;
 	public Solver(State initialState, Set<Coordinate> boundary) {
 		this.boundary = ImmutableSortedSet.copyOf(boundary);
-		this.closed.add(initialState);
-		this.frontier.add(initialState);
+		this.initialState = initialState;
 	}
 
 	public State solve() {
-		//Breadth-first search.
-		while (!frontier.isEmpty()) {
-			List<State> next = frontier.remove().nextStates(boundary);
-			next.removeIf(closed::contains);
-			for (State s : next) {
-				if (s.isSolved())
-					return s;
-				frontier.addAll(next);
-				closed.addAll(next);
-			}
-		}
+		Optional<State> solution = new ParallelBFS<State>(s -> s.nextStates(boundary).stream(), State::isSolved)
+				.filter(ConcurrentHashMap.newKeySet()::add)
+				.find(initialState);
+		if (solution.isPresent()) return solution.get();
 		throw new AssertionError("search ended with no solution?!");
 	}
 
