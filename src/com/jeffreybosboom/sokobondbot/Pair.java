@@ -22,6 +22,7 @@ import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  *
@@ -60,6 +61,16 @@ public final class Pair<A, B> {
 
 	public <A1, B1> Pair<A1, B1> map(Function<? super A, A1> firstMapper, Function<? super B, B1> secondMapper) {
 		return map((f, s) -> new Pair<>(firstMapper.apply(f), secondMapper.apply(s)));
+	}
+
+	//Best we can do; see https://stackoverflow.com/questions/10809234/substitute-for-illegal-lower-bounds-on-a-generic-java-method
+	private <T> Stream<T> stream(Class<T> klass) {
+		return Stream.of(klass.cast(first), klass.cast(second));
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> Stream<T> streamUnchecked() {
+		return (Stream<T>)Stream.of(first, second);
 	}
 
 	@Override
