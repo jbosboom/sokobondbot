@@ -1,7 +1,7 @@
 package com.jeffreybosboom.sokobondbot;
 
 import com.google.common.util.concurrent.Uninterruptibles;
-import com.jeffreybosboom.windows.Windows;
+import com.jeffreybosboom.windowlib.Window;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.event.InputEvent;
@@ -21,7 +21,10 @@ import javax.imageio.ImageIO;
  */
 public final class Effector {
 	public static void main(String[] args) throws Exception {
-		Rectangle sokobondRect = Windows.getClientAreaByTitle("Sokobond");
+		Window hwnd = Window.findWindowByTitle("Sokobond");
+		Rectangle sokobondRect = hwnd.getClientAreaScreenCoordinates();
+		hwnd.setInForeground();
+		hwnd.bringToTop();
 		Robot robot = new Robot();
 
 		//focus on Sokobond window

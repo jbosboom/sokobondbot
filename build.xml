@@ -6,6 +6,14 @@ xmlns:if="ant:if" xmlns:unless="ant:unless"
 		<mkdir dir="lib/doc"/>
 		<mkdir dir="lib/src"/>
 
+		<!-- use a local windowlib jar if available -->
+		<copy file="../windowlib/build/jar/windowlib.jar"
+			  tofile="lib/windowlib.jar"
+			  failonerror="false" quiet="true" />
+		<get src="https://github.com/jbosboom/windowlib/releases/download/20141121/windowlib.jar"
+			  dest="lib/windowlib.jar"
+			  skipexisting="true"/>
+
 		<get src="http://search.maven.org/remotecontent?filepath=com/nativelibs4java/bridj/0.6.2/bridj-0.6.2-c-only.jar"
 			 dest="lib/bridj.jar"
 			 skipexisting="true"/>
