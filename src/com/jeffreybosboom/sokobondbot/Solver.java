@@ -18,7 +18,6 @@ import javax.imageio.ImageIO;
  */
 public final class Solver {
 	private final ImmutableSortedSet<Coordinate> boundary;
-	//states we've visited or are already in frontier
 	private final State initialState;
 	public Solver(State initialState, Set<Coordinate> boundary) {
 		this.boundary = ImmutableSortedSet.copyOf(boundary);
@@ -26,9 +25,11 @@ public final class Solver {
 	}
 
 	public State solve() {
+		ConcurrentHashMap.KeySetView<Object, Boolean> closedSet = ConcurrentHashMap.newKeySet();
 		Optional<State> solution = new ParallelBFS<State>(s -> s.nextStates(boundary).stream(), State::isSolved)
-				.filter(ConcurrentHashMap.newKeySet()::add)
+				.filter(s -> closedSet.add(s.pack()))
 				.find(initialState);
+		System.out.println(closedSet.size()+" states in closed set");
 		if (solution.isPresent()) return solution.get();
 		throw new AssertionError("search ended with no solution?!");
 	}

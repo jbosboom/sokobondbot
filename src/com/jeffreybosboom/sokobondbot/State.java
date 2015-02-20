@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedMultiset;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Multiset;
+import com.jeffreybosboom.parallelbfs.DataContainer;
 import static com.jeffreybosboom.sokobondbot.Utils.toSortedSet;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -174,6 +175,27 @@ public final class State {
 		}
 		movingAtoms.addAll(molecule);
 		return movingAtoms;
+	}
+
+	public Object pack() {
+		DataContainer array = DataContainer.create(atoms.size() * 2 + bonds.elementSet().size() * 3);
+		int i = 0;
+		for (Map.Entry<Coordinate, Element> e : atoms.entrySet()) {
+			array.set(i++, pack(e.getKey()));
+			array.set(i++, (byte)(e.getValue().ordinal() |
+					(e.getKey() == playerAtom ? 0b10000000 : 0)));
+		}
+		for (Multiset.Entry<Pair<Coordinate, Coordinate>> e : bonds.entrySet()) {
+			array.set(i++, pack(e.getElement().first()));
+			array.set(i++, pack(e.getElement().second()));
+			array.set(i++, (byte)e.getCount());
+		}
+		return array;
+	}
+
+	private static byte pack(Coordinate c) {
+		assert 0 <= c.row() && c.row() < 16 && 0 <= c.col() && c.col() < 16 : c;
+		return (byte)(c.row() << 4 | c.col());
 	}
 
 	@Override
