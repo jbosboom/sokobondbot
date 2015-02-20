@@ -1,6 +1,5 @@
 package com.jeffreybosboom.sokobondbot;
 
-import com.google.common.collect.ImmutableList;
 import static com.jeffreybosboom.sokobondbot.Utils.toSortedMultiset;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedMultiset;
@@ -55,18 +54,18 @@ public final class State {
 	private final ImmutableSortedMap<Coordinate, Element> atoms;
 	private final ImmutableSortedMultiset<Pair<Coordinate, Coordinate>> bonds;
 	private final Coordinate playerAtom;
-	private final ImmutableList<Direction> path;
+	private final Path path;
 	public State(Map<Coordinate, Element> atoms, Multiset<Pair<Coordinate, Coordinate>> bonds, Coordinate playerAtom) {
-		this(atoms, bonds, playerAtom, ImmutableList.of());
+		this(atoms, bonds, playerAtom, TwoLongPath.empty());
 	}
 
-	private State(Map<Coordinate, Element> atoms, Multiset<Pair<Coordinate, Coordinate>> bonds, Coordinate playerAtom, List<Direction> path) {
+	private State(Map<Coordinate, Element> atoms, Multiset<Pair<Coordinate, Coordinate>> bonds, Coordinate playerAtom, Path path) {
 		this.atoms = ImmutableSortedMap.copyOf(atoms);
 		this.bonds = ImmutableSortedMultiset.copyOf(Pair.comparator(), bonds);
 		bonds.stream().flatMap(b -> Stream.of(b.first(), b.second()))
 				.forEachOrdered(c -> {assert atoms.containsKey(c) : atoms + " " + bonds;});
 		this.playerAtom = playerAtom;
-		this.path = ImmutableList.copyOf(path);
+		this.path = path;
 	}
 
 	public static int freeElectrons(Coordinate atom, Map<Coordinate, Element> atoms, Multiset<Pair<Coordinate, Coordinate>> bonds) {
@@ -88,7 +87,7 @@ public final class State {
 		return atoms.keySet().stream().noneMatch(a -> freeElectrons(a, atoms, bonds) > 0);
 	}
 
-	public ImmutableList<Direction> path() {
+	public Path path() {
 		return path;
 	}
 
@@ -147,7 +146,7 @@ public final class State {
 					Stream.concat(translatedBonds.stream(), newlyFormedBonds.stream())
 					.collect(toSortedMultiset(Pair.comparator()));
 			retval.add(new State(newAtoms, newBonds, playerAtom.translate(dir),
-					ImmutableList.<Direction>builder().addAll(path).add(dir).build()));
+					path.append(dir)));
 		}
 		return retval;
 	}
