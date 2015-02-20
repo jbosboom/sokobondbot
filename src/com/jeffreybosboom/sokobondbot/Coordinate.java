@@ -9,13 +9,22 @@ import java.util.stream.Stream;
  * @since 10/29/2014
  */
 public final class Coordinate implements Comparable<Coordinate> {
+	//fixed bounds to avoid synchronizing when accessing the cache
+	private static final int MIN_COORDINATE = 0, MAX_COORDINATE = 10;
+	private static final Coordinate[][] INSTANCES = new Coordinate[MAX_COORDINATE-MIN_COORDINATE+1][MAX_COORDINATE-MIN_COORDINATE+1];
+	static {
+		for (int i = MIN_COORDINATE; i <= MAX_COORDINATE; ++i)
+			for (int j = MIN_COORDINATE; j <= MAX_COORDINATE; ++j)
+				INSTANCES[i - MIN_COORDINATE][j - MIN_COORDINATE] = new Coordinate(i, j);
+	}
+
 	private final int row, col;
 	private Coordinate(int row, int col) {
 		this.row = row;
 		this.col = col;
 	}
 	public static Coordinate at(int row, int col) {
-		return new Coordinate(row, col);
+		return INSTANCES[row - MIN_COORDINATE][col - MIN_COORDINATE];
 	}
 	public int row() {
 		return row;
