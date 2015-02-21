@@ -10,7 +10,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.imageio.ImageIO;
 
@@ -41,9 +40,9 @@ public final class Effector {
 		ImageIO.write(images.get(0), "PNG", new File("foo.png"));
 
 		Sensor sensor = new Sensor(images);
-		Pair<State, Set<Coordinate>> puzzle = sensor.sense();
+		Puzzle puzzle = sensor.sense();
 
-		Solver solver = new Solver(puzzle.first, puzzle.second);
+		Solver solver = new Solver(puzzle);
 		State solution = solver.solve();
 
 		System.out.println(solution.path());

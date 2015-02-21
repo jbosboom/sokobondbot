@@ -69,11 +69,11 @@ public final class Sensor {
 	 * (which are not stored in the state as they don't change between states).
 	 * @return the initial state and boundary cells
 	 */
-	public Pair<State, Set<Coordinate>> sense() {
+	public Puzzle sense() {
 		determineBoundary();
 		determinePlayfield();
 		constructMolecules();
-		return new Pair<>(initialState, boundary);
+		return new Puzzle(boundary, initialState);
 	}
 
 	private void determineBoundary() {
