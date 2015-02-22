@@ -28,7 +28,7 @@ public final class Solver {
 		ConcurrentHashMap.KeySetView<Object, Boolean> closedSet = ConcurrentHashMap.newKeySet();
 		Optional<State> solution = new ParallelBFS<State>(s -> s.nextStates(boundary).stream(), State::isSolved)
 				.filter(s -> closedSet.add(s.pack()))
-				.find(puzzle.initialState());
+				.find(new State(puzzle));
 		System.out.println(closedSet.size()+" states in closed set");
 		if (solution.isPresent()) return solution.get();
 		throw new AssertionError("search ended with no solution?!");

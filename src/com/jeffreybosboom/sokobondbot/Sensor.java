@@ -3,15 +3,11 @@ package com.jeffreybosboom.sokobondbot;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableRangeSet;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeRangeSet;
 import com.google.common.math.IntMath;
 import com.jeffreybosboom.region.Region;
-import com.jeffreybosboom.sokobondbot.State.Element;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -59,7 +55,6 @@ public final class Sensor {
 	private ImmutableRangeSet<Integer> rowRanges, colRanges;
 	private int squareSize, intersquareSpace, totalRows, totalCols;
 	private ImmutableSortedSet<Coordinate> playfield;
-	private State initialState;
 	public Sensor(List<BufferedImage> images) {
 		this.images = ImmutableList.copyOf(images.stream().map(Image::new).iterator());
 	}
@@ -72,8 +67,7 @@ public final class Sensor {
 	public Puzzle sense() {
 		determineBoundary();
 		determinePlayfield();
-		constructMolecules();
-		return new Puzzle(boundary, initialState);
+		return constructMolecules();
 	}
 
 	private void determineBoundary() {
@@ -135,7 +129,7 @@ public final class Sensor {
 		this.playfield = ImmutableSortedSet.copyOf(playfield);
 	}
 
-	private void constructMolecules() {
+	private Puzzle constructMolecules() {
 		Map<Coordinate, Element> elementMap = new TreeMap<>();
 		Map<Coordinate, Integer> freeElectronsMap = new TreeMap<>();
 		List<Coordinate> playerControlledList = new ArrayList<>();
@@ -177,7 +171,7 @@ public final class Sensor {
 				bondsSet.setCount(Pair.sorted(occupied, n), bonds);
 			});
 
-		this.initialState = new State(elementMap, bondsSet, playerControlledList.get(0));
+		return new Puzzle(boundary, elementMap, bondsSet, playerControlledList.get(0));
 	}
 
 	private int pixelToRow(int rowPixel) {

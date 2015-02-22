@@ -1,6 +1,10 @@
 package com.jeffreybosboom.sokobondbot;
 
+import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedMultiset;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Multiset;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -13,15 +17,26 @@ import java.util.Set;
  */
 public final class Puzzle {
 	private final ImmutableSortedSet<Coordinate> boundary;
-	private final State initialState;
-	public Puzzle(Set<Coordinate> boundary, State initialState) {
+	private final ImmutableSortedMap<Coordinate, Element> atoms;
+	private final ImmutableSortedMultiset<Pair<Coordinate, Coordinate>> bonds;
+	private final Coordinate playerAtom;
+	public Puzzle(Set<Coordinate> boundary, Map<Coordinate, Element> atoms,
+			Multiset<Pair<Coordinate, Coordinate>> bonds, Coordinate playerAtom) {
 		this.boundary = ImmutableSortedSet.copyOf(boundary);
-		this.initialState = initialState;
+		this.atoms = ImmutableSortedMap.copyOf(atoms);
+		this.bonds = ImmutableSortedMultiset.copyOf(bonds);
+		this.playerAtom = playerAtom;
 	}
 	public ImmutableSortedSet<Coordinate> boundary() {
 		return boundary;
 	}
-	public State initialState() {
-		return initialState;
+	public ImmutableSortedMap<Coordinate, Element> atoms() {
+		return atoms;
+	}
+	public ImmutableSortedMultiset<Pair<Coordinate, Coordinate>> bonds() {
+		return bonds;
+	}
+	public Coordinate playerAtom() {
+		return playerAtom;
 	}
 }

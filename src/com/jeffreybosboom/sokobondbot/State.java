@@ -26,36 +26,13 @@ import java.util.stream.Stream;
  * @since 10/27/2014
  */
 public final class State {
-	public static enum Element {
-		//declared in order of max electron count
-		HELIUM(0xFFFFFFFF),
-		HYDROGEN(0xFFFE8A80),
-		OXYGEN(0xFFA6C4FD),
-		NITROGEN(0xFFAFDC8A),
-		CARBON(0xFFFED776);
-		private final int color;
-		private Element(int color) {
-			this.color = color;
-		}
-		public int color() {
-			return color;
-		}
-		public int maxElectrons() {
-			return ordinal();
-		}
-
-		public static Element fromColor(int color) {
-			for (Element e : values())
-				if (e.color() == color)
-					return e;
-			return null;
-		}
-	}
-
 	private final ImmutableSortedMap<Coordinate, Element> atoms;
 	private final ImmutableSortedMultiset<Pair<Coordinate, Coordinate>> bonds;
 	private final Coordinate playerAtom;
 	private final Path path;
+	public State(Puzzle puzzle) {
+		this(puzzle.atoms(), puzzle.bonds(), puzzle.playerAtom());
+	}
 	public State(Map<Coordinate, Element> atoms, Multiset<Pair<Coordinate, Coordinate>> bonds, Coordinate playerAtom) {
 		this(atoms, bonds, playerAtom, TwoLongPath.empty());
 	}
