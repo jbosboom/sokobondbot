@@ -43,10 +43,10 @@ public final class Effector {
 		Puzzle puzzle = sensor.sense();
 
 		Solver solver = new Solver(puzzle);
-		State solution = solver.solve();
+		Path solution = solver.solve();
 
-		System.out.println(solution.path());
-		for (Direction d : solution.path()) {
+		System.out.println(solution);
+		for (Direction d : solution) {
 			int keycode = keycode(d);
 			robot.keyPress(keycode);
 			robot.keyRelease(keycode);

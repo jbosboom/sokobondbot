@@ -22,25 +22,34 @@ public final class Solver {
 		this.puzzle = puzzle;
 	}
 
-	public State solve() {
-		//capture the boundary in the lambda, not the puzzle
-		final ImmutableSortedSet<Coordinate> boundary = puzzle.boundary();
+	public Path solve() {
 		ConcurrentHashMap.KeySetView<Object, Boolean> closedSet = ConcurrentHashMap.newKeySet();
-		Optional<State> solution = new ParallelBFS<State>(s -> s.nextStates(boundary).stream(), State::isSolved)
-				.filter(s -> closedSet.add(s.pack()))
-				.find(new State(puzzle));
+
+//		//capture the boundary in the lambda, not the puzzle
+//		final ImmutableSortedSet<Coordinate> boundary = puzzle.boundary();
+//		Optional<State> solution = new ParallelBFS<State>(s -> s.nextStates(boundary).stream(), State::isSolved)
+//				.filter(s -> closedSet.add(s.pack()))
+//				.find(new State(puzzle));
+//		System.out.println(closedSet.size()+" states in closed set");
+//		if (solution.isPresent()) return solution.get().path();
+//		throw new AssertionError("search ended with no solution?!");
+
+		boolean[] boundary = StateUnboxed.encodeBoundary(puzzle.boundary());
+		int totalFreeElectrons = puzzle.atoms().values().stream().mapToInt(Element::maxElectrons).sum();
+		Optional<StateUnboxed> solution = new ParallelBFS<>(s -> s.nextStates(boundary), StateUnboxed::isSolved)
+				.filter(s -> closedSet.add(s.pack(totalFreeElectrons)))
+				.find(new StateUnboxed(puzzle));
 		System.out.println(closedSet.size()+" states in closed set");
-		if (solution.isPresent()) return solution.get();
+		if (solution.isPresent()) return solution.get().path();
 		throw new AssertionError("search ended with no solution?!");
 	}
 
 	public static void main(String[] args) throws Exception {
 		List<BufferedImage> imgs = new ArrayList<>();
 		for (int i = 1; i < 10; ++i)
-			imgs.add(ImageIO.read(new File("C:\\Users\\jbosboom\\Pictures\\Steam Unsorted\\290260_2014-10-23_0000"+i+".png")));
+			imgs.add(ImageIO.read(new File("C:\\Users\\jbosboom\\Pictures\\Steam Unsorted\\290260_2015-02-19_0000"+i+".png")));
 		Puzzle sensation = new Sensor(imgs).sense();
-		State solution = new Solver(sensation).solve();
+		Path solution = new Solver(sensation).solve();
 		System.out.println(solution);
-		System.out.println(solution.path());
 	}
 }
