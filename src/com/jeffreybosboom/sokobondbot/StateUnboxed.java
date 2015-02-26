@@ -203,22 +203,27 @@ public final class StateUnboxed {
 			remainingFE += freeElectrons(atoms, i);
 		int boundCount = (prepro.maxFreeElectrons - remainingFE)/2;
 
-		//because we don't sort the atoms, we need only store their coordinate,
-		//not their element or player flag
-		//bonds are idx1 << 4 | idx2.
+		//Sort atom coordinates in each element range.  We'll remap bond indices
+		//into the (sorted) packed order.
 		DataContainer d = DataContainer.create(atoms.length + boundCount);
 		int i = 0;
-		for (int a : atoms)
-			d.set(i++, (byte)((a & COORD_MASK) >> numberOfTrailingZeros(COORD_MASK)));
-		//TODO: exit early if we've seen all the bonds?
+		for (int j = 0; j < atoms.length; ++j)
+			d.set(i++, coordByte(atoms, j));
+		for (byte r : prepro.elementRanges)
+			d.sort((r & 0xF0) >> 4, (r & 0xF));
+		//bonds are idx1 << 4 | idx2.
+		//TODO: exit early if we've seen all the bonds? (esp if many heliums)
 		for (int idx1 = 0; idx1 < atoms.length; ++idx1) {
 			int bonds = bonds(atoms, idx1);
 			while (bonds != 0) {
 				int bit = lowestOneBit(bonds);
 				bonds &= ~bit;
 				int idx2 = numberOfTrailingZeros(bit);
+				//translate indices
+				int idx1p = d.indexOf(coordByte(atoms, idx1));
+				int idx2p = d.indexOf(coordByte(atoms, idx2));
 				if (idx1 < idx2)
-					d.set(i++, (byte)(idx1 << 4 | idx2));
+					d.set(i++, (byte)Math.min((byte)(idx1p << 4 | idx2p), (byte)(idx2p << 4 | idx1p)));
 			}
 		}
 		return d;
@@ -262,6 +267,10 @@ public final class StateUnboxed {
 
 	private static int col(int[] atoms, int atom) {
 		return (atoms[atom] & COL_MASK) >> numberOfTrailingZeros(COL_MASK);
+	}
+
+	private static byte coordByte(int[] atoms, int atom) {
+		return (byte)((atoms[atom] & COORD_MASK) >> numberOfTrailingZeros(COORD_MASK));
 	}
 
 	private static int pack(Element e) {
