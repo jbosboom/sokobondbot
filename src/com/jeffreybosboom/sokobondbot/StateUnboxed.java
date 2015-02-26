@@ -1,5 +1,6 @@
 package com.jeffreybosboom.sokobondbot;
 
+import com.google.common.collect.Multiset;
 import com.jeffreybosboom.parallelbfs.DataContainer;
 import static java.lang.Integer.lowestOneBit;
 import static java.lang.Integer.numberOfTrailingZeros;
@@ -75,7 +76,6 @@ public final class StateUnboxed {
 	public StateUnboxed(Puzzle puzzle, PreprocessedPuzzle prepro) {
 		this.path = TwoLongPath.empty();
 		this.atoms = new int[puzzle.atoms().size()];
-		assert puzzle.bonds().isEmpty() : "TODO initialize bonds";
 		atoms[PLAYER_ATOM] = pack(puzzle.atoms().get(puzzle.playerAtom())) |
 				packFE(puzzle.atoms().get(puzzle.playerAtom()).maxElectrons()) |
 				pack(puzzle.playerAtom());
@@ -85,6 +85,13 @@ public final class StateUnboxed {
 			atoms[i++] = pack(puzzle.atoms().get(c)) |
 					packFE(puzzle.atoms().get(c).maxElectrons()) |
 					pack(c);
+		}
+		for (Multiset.Entry<Pair<Coordinate, Coordinate>> entry : puzzle.bonds().entrySet()) {
+			if (entry.getCount() > 1) throw new UnsupportedOperationException("multiple bonds not supported");
+			Pair<Coordinate, Coordinate> bond = entry.getElement();
+			int a = prepro.initialAtomOrder.indexOf(bond.first()), b = prepro.initialAtomOrder.indexOf(bond.second());
+			if (!bond(atoms, a, b))
+				throw new IllegalArgumentException("Insoluble puzzle");
 		}
 	}
 
