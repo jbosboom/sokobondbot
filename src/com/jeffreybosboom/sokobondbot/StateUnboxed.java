@@ -32,11 +32,13 @@ public final class StateUnboxed {
 		private final int maxFreeElectrons;
 		private final List<Coordinate> initialAtomOrder;
 		private final byte[] elementRanges;
-		private PreprocessedPuzzle(boolean[] boundary, int maxFreeElectrons, List<Coordinate> initialAtomOrder, byte[] elementRanges) {
+		private final char[] forbiddenBonds;
+		private PreprocessedPuzzle(boolean[] boundary, int maxFreeElectrons, List<Coordinate> initialAtomOrder, byte[] elementRanges, char[] forbiddenBonds) {
 			this.boundary = boundary;
 			this.maxFreeElectrons = maxFreeElectrons;
 			this.initialAtomOrder = initialAtomOrder;
 			this.elementRanges = elementRanges;
+			this.forbiddenBonds = forbiddenBonds;
 		}
 	}
 
@@ -70,7 +72,38 @@ public final class StateUnboxed {
 		for (int i = 0; i < elementRangesList.size(); ++i)
 			elementRanges[i] = elementRangesList.get(i);
 
-		return new PreprocessedPuzzle(boundary, maxFreeElectrons, initialAtomOrder, elementRanges);
+		//hack to get atoms array
+		int[] atoms = new StateUnboxed(puzzle, new PreprocessedPuzzle(boundary, maxFreeElectrons, initialAtomOrder, elementRanges, null)).atoms;
+		char[] forbiddenBonds = computeForbiddenBonds(atoms);
+
+		return new PreprocessedPuzzle(boundary, maxFreeElectrons, initialAtomOrder, elementRanges, forbiddenBonds);
+	}
+
+	private static char[] computeForbiddenBonds(int[] atoms) {
+		char[] possibleBonds = new char[atoms.length];
+		solveNoGeometry(atoms, possibleBonds);
+		for (int i = 0; i < possibleBonds.length; ++i)
+			possibleBonds[i] = (char)~possibleBonds[i];
+		return possibleBonds;
+	}
+
+	private static void solveNoGeometry(int[] atoms, char[] possibleBonds) {
+		int totalFE = 0;
+		for (int i = 0; i < atoms.length; ++i)
+			totalFE += freeElectrons(atoms, i);
+		if (totalFE == 0) {
+			//this is a solution, so all these bonds are possible
+			for (int i = 0; i < atoms.length; ++i)
+				possibleBonds[i] |= bonds(atoms, i);
+			return;
+		}
+		for (int i = 0; i < atoms.length; ++i)
+			for (int j = i+1; j < atoms.length; ++j) {
+				if (bond(atoms, i, j)) {
+					solveNoGeometry(atoms, possibleBonds);
+					unbond(atoms, i, j);
+				}
+			}
 	}
 
 	public StateUnboxed(Puzzle puzzle, PreprocessedPuzzle prepro) {
@@ -104,6 +137,14 @@ public final class StateUnboxed {
 		//TODO: & everything and ELECTRON_MASK (avoids branch)
 		for (int i = 0; i < atoms.length; ++i)
 			if (freeElectrons(atoms, i) != 0)
+				return false;
+		return true;
+	}
+
+	public boolean isViable(PreprocessedPuzzle prepro) {
+		//if forbidden bond, not viable.
+		for (int i = 0; i < atoms.length; ++i)
+			if ((bonds(atoms, i) & prepro.forbiddenBonds[i]) != 0)
 				return false;
 		return true;
 	}
@@ -265,6 +306,16 @@ public final class StateUnboxed {
 		setFreeElectrons(atoms, b, bfe-1);
 		setBonds(atoms, a, (char)(bonds(atoms, a) | (1 << b)));
 		setBonds(atoms, b, (char)(bonds(atoms, b) | (1 << a)));
+		return true;
+	}
+
+	private static boolean unbond(int[] atoms, int a, int b) {
+		if (!bonded(atoms, a, b)) return false;
+		int afe = freeElectrons(atoms, a), bfe = freeElectrons(atoms, b);
+		setFreeElectrons(atoms, a, afe+1);
+		setFreeElectrons(atoms, b, bfe+1);
+		setBonds(atoms, a, (char)(bonds(atoms, a) & ~(1 << b)));
+		setBonds(atoms, b, (char)(bonds(atoms, b) & ~(1 << a)));
 		return true;
 	}
 

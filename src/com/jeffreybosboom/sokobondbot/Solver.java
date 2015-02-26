@@ -40,8 +40,9 @@ public final class Solver {
 
 		StateUnboxed.PreprocessedPuzzle prepro = StateUnboxed.preprocess(puzzle);
 		Optional<StateUnboxed> solution = new ParallelBFS<>(s -> s.nextStates(prepro), StateUnboxed::isSolved)
+				.filter(s -> s.isViable(prepro))
 				.filter(s -> closedSet.add(s.pack(prepro)))
-				.sequential()
+//				.sequential()
 				.find(new StateUnboxed(puzzle, prepro));
 		System.out.println(stopwatch.stop().elapsed(TimeUnit.MILLISECONDS)+" ms");
 		System.out.println(closedSet.size()+" states in closed set");
