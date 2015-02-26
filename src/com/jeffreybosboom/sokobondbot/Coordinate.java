@@ -10,7 +10,7 @@ import java.util.stream.Stream;
  */
 public final class Coordinate implements Comparable<Coordinate> {
 	//fixed bounds to avoid synchronizing when accessing the cache
-	private static final int MIN_COORDINATE = 0, MAX_COORDINATE = 10;
+	private static final int MIN_COORDINATE = -1, MAX_COORDINATE = 10;
 	private static final Coordinate[][] INSTANCES = new Coordinate[MAX_COORDINATE-MIN_COORDINATE+1][MAX_COORDINATE-MIN_COORDINATE+1];
 	static {
 		for (int i = MIN_COORDINATE; i <= MAX_COORDINATE; ++i)
