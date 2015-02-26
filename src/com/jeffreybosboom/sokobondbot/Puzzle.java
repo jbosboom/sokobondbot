@@ -24,7 +24,7 @@ public final class Puzzle {
 			Multiset<Pair<Coordinate, Coordinate>> bonds, Coordinate playerAtom) {
 		this.boundary = ImmutableSortedSet.copyOf(boundary);
 		this.atoms = ImmutableSortedMap.copyOf(atoms);
-		this.bonds = ImmutableSortedMultiset.copyOf(bonds);
+		this.bonds = ImmutableSortedMultiset.copyOf(Pair.comparator(), bonds);
 		this.playerAtom = playerAtom;
 	}
 	public ImmutableSortedSet<Coordinate> boundary() {
