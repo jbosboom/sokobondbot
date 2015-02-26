@@ -4,6 +4,7 @@ import com.jeffreybosboom.parallelbfs.DataContainer;
 import static java.lang.Integer.lowestOneBit;
 import static java.lang.Integer.numberOfTrailingZeros;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,7 +25,54 @@ public final class StateUnboxed {
 	private static final int PLAYER_ATOM = 0;
 	private final int[] atoms;
 	private final Path path;
-	public StateUnboxed(Puzzle puzzle) {
+
+	public static final class PreprocessedPuzzle {
+		private final boolean[] boundary;
+		private final int maxFreeElectrons;
+		private final List<Coordinate> initialAtomOrder;
+		private final byte[] elementRanges;
+		private PreprocessedPuzzle(boolean[] boundary, int maxFreeElectrons, List<Coordinate> initialAtomOrder, byte[] elementRanges) {
+			this.boundary = boundary;
+			this.maxFreeElectrons = maxFreeElectrons;
+			this.initialAtomOrder = initialAtomOrder;
+			this.elementRanges = elementRanges;
+		}
+	}
+
+	public static PreprocessedPuzzle preprocess(Puzzle puzzle) {
+		boolean[] boundary = new boolean[256];
+		for (Coordinate c : puzzle.boundary())
+			boundary[c.row() << 4 | c.col()] = true;
+
+		int maxFreeElectrons = puzzle.atoms().values().stream().mapToInt(Element::maxElectrons).sum();
+
+		List<Coordinate> initialAtomOrder = new ArrayList<>(puzzle.atoms().keySet());
+		initialAtomOrder.remove(puzzle.playerAtom());
+		//reversed sort puts atoms with more bonds first, helium last
+		initialAtomOrder.sort(Comparator.comparing(puzzle.atoms()::get).reversed());
+		initialAtomOrder.add(0, puzzle.playerAtom());
+
+		List<Byte> elementRangesList = new ArrayList<>();
+		//player atom not in an element range
+		int start = 1;
+		Element e = puzzle.atoms().get(initialAtomOrder.get(start));
+		for (int i = start+1; i < initialAtomOrder.size(); ++i) {
+			Element c = puzzle.atoms().get(initialAtomOrder.get(i));
+			if (e != c) {
+				elementRangesList.add((byte)(start << 4 | i));
+				start = i;
+				e = c;
+			}
+		}
+		elementRangesList.add((byte)(start << 4 | initialAtomOrder.size()));
+		byte[] elementRanges = new byte[elementRangesList.size()];
+		for (int i = 0; i < elementRangesList.size(); ++i)
+			elementRanges[i] = elementRangesList.get(i);
+
+		return new PreprocessedPuzzle(boundary, maxFreeElectrons, initialAtomOrder, elementRanges);
+	}
+
+	public StateUnboxed(Puzzle puzzle, PreprocessedPuzzle prepro) {
 		this.path = TwoLongPath.empty();
 		this.atoms = new int[puzzle.atoms().size()];
 		assert puzzle.bonds().isEmpty() : "TODO initialize bonds";
@@ -32,11 +80,11 @@ public final class StateUnboxed {
 				packFE(puzzle.atoms().get(puzzle.playerAtom()).maxElectrons()) |
 				pack(puzzle.playerAtom());
 		int i = 1;
-		for (Map.Entry<Coordinate, Element> atom : puzzle.atoms().entrySet()) {
-			if (atom.getKey().equals(puzzle.playerAtom())) continue;
-			atoms[i++] = pack(atom.getValue()) |
-					packFE(atom.getValue().maxElectrons()) |
-					pack(atom.getKey());
+		for (Coordinate c : prepro.initialAtomOrder) {
+			if (c.equals(puzzle.playerAtom())) continue;
+			atoms[i++] = pack(puzzle.atoms().get(c)) |
+					packFE(puzzle.atoms().get(c).maxElectrons()) |
+					pack(c);
 		}
 	}
 
@@ -57,12 +105,12 @@ public final class StateUnboxed {
 		return path;
 	}
 
-	public Stream<StateUnboxed> nextStates(boolean[] boundary) {
+	public Stream<StateUnboxed> nextStates(PreprocessedPuzzle prepro) {
 		List<StateUnboxed> nextStates = new ArrayList<>(4);
 		char molecule = molecule(atoms, 0);
 		fail: for (Direction dir : Direction.values()) {
 			int[] newAtoms = atoms.clone();
-			int movedAtoms = tryMove(newAtoms, molecule, dir.ordinal(), boundary);
+			int movedAtoms = tryMove(newAtoms, molecule, dir.ordinal(), prepro.boundary);
 			if (movedAtoms == -1)
 				continue fail; //TODO: try to reuse the newly-cloned array
 
@@ -149,11 +197,11 @@ public final class StateUnboxed {
 		return moved;
 	}
 
-	public Object pack(int totalFEInPuzzle) {
+	public Object pack(PreprocessedPuzzle prepro) {
 		int remainingFE = 0;
 		for (int i = 0; i < atoms.length; ++i)
 			remainingFE += freeElectrons(atoms, i);
-		int boundCount = (totalFEInPuzzle - remainingFE)/2;
+		int boundCount = (prepro.maxFreeElectrons - remainingFE)/2;
 
 		//because we don't sort the atoms, we need only store their coordinate,
 		//not their element or player flag
@@ -236,12 +284,5 @@ public final class StateUnboxed {
 
 	private static int absdiff(int a, int b) {
 		return Math.abs(a - b);
-	}
-
-	public static boolean[] encodeBoundary(Set<Coordinate> boundary) {
-		boolean[] b = new boolean[256];
-		for (Coordinate c : boundary)
-			b[c.row() << 4 | c.col()] = true;
-		return b;
 	}
 }
