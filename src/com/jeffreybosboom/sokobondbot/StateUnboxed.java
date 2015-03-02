@@ -9,6 +9,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
@@ -264,6 +265,35 @@ public final class StateUnboxed {
 			}
 		}
 		return d;
+	}
+
+	public static final class ClosedSetPruner implements Consumer<List<StateUnboxed>> {
+		private final Set<Object> closedSet;
+		private final int atoms;
+		private int minBondsInClosedSet = 0;
+		public ClosedSetPruner(PreprocessedPuzzle prepro, Set<Object> closedSet) {
+			this.closedSet = closedSet;
+			this.atoms = prepro.initialAtomOrder.size();
+		}
+		@Override
+		public void accept(List<StateUnboxed> frontier) {
+			if (frontier.isEmpty()) return;
+			//if there are no splitters in a puzzle, and all states in the
+			//frontier have at least N bonds, we can remove all states with < N
+			//bonds from the closed set.
+			//can't short-circuit: http://stackoverflow.com/q/28801293/3614835
+			//TODO: parallel if frontier.size() > N
+			int minBonds = frontier.stream().mapToInt(s -> totalBonds(s.atoms)).min().getAsInt();
+			if (minBonds > minBondsInClosedSet) {
+				int before = closedSet.size();
+				//TODO: parallel?
+				closedSet.removeIf(d -> ((DataContainer)d).size() < (atoms + minBonds));
+				minBondsInClosedSet = minBonds;
+				int after = closedSet.size();
+				System.out.format("pruned closed set to %d bonds, removed %d, now %d%n",
+						minBondsInClosedSet, before-after, after);
+			}
+		}
 	}
 
 	private static char bonds(int[] atoms, int atom) {
