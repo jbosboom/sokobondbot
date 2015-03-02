@@ -21,6 +21,8 @@ public final class StateUnboxed {
 	private static final int ROW_MASK =		0b00000000_11110000_00000000_00000000;
 	private static final int COL_MASK =		0b00000000_00001111_00000000_00000000;
 	private static final int ELECTRON_MASK =0b00000111_00000000_00000000_00000000;
+	//for player atom (atoms[0]) only
+	private static final int TOTAL_BONDS =	0b11111000_00000000_00000000_00000000;
 	private static final int COORD_MASK = ROW_MASK | COL_MASK;
 	private static final int PLAYER_ATOM = 0;
 	private final int[] atoms;
@@ -28,13 +30,11 @@ public final class StateUnboxed {
 
 	public static final class PreprocessedPuzzle {
 		private final boolean[] boundary;
-		private final int maxFreeElectrons;
 		private final List<Coordinate> initialAtomOrder;
 		private final byte[] elementRanges;
 		private final char[] forbiddenBonds;
-		private PreprocessedPuzzle(boolean[] boundary, int maxFreeElectrons, List<Coordinate> initialAtomOrder, byte[] elementRanges, char[] forbiddenBonds) {
+		private PreprocessedPuzzle(boolean[] boundary, List<Coordinate> initialAtomOrder, byte[] elementRanges, char[] forbiddenBonds) {
 			this.boundary = boundary;
-			this.maxFreeElectrons = maxFreeElectrons;
 			this.initialAtomOrder = initialAtomOrder;
 			this.elementRanges = elementRanges;
 			this.forbiddenBonds = forbiddenBonds;
@@ -45,8 +45,6 @@ public final class StateUnboxed {
 		boolean[] boundary = new boolean[256];
 		for (Coordinate c : puzzle.boundary())
 			boundary[c.row() << 4 | c.col()] = true;
-
-		int maxFreeElectrons = puzzle.atoms().values().stream().mapToInt(Element::maxElectrons).sum();
 
 		List<Coordinate> initialAtomOrder = new ArrayList<>(puzzle.atoms().keySet());
 		initialAtomOrder.remove(puzzle.playerAtom());
@@ -72,10 +70,10 @@ public final class StateUnboxed {
 			elementRanges[i] = elementRangesList.get(i);
 
 		//hack to get atoms array
-		int[] atoms = new StateUnboxed(puzzle, new PreprocessedPuzzle(boundary, maxFreeElectrons, initialAtomOrder, elementRanges, null)).atoms;
+		int[] atoms = new StateUnboxed(puzzle, new PreprocessedPuzzle(boundary, initialAtomOrder, elementRanges, null)).atoms;
 		char[] forbiddenBonds = computeForbiddenBonds(atoms);
 
-		return new PreprocessedPuzzle(boundary, maxFreeElectrons, initialAtomOrder, elementRanges, forbiddenBonds);
+		return new PreprocessedPuzzle(boundary, initialAtomOrder, elementRanges, forbiddenBonds);
 	}
 
 	private static char[] computeForbiddenBonds(int[] atoms) {
@@ -242,14 +240,9 @@ public final class StateUnboxed {
 	}
 
 	public Object pack(PreprocessedPuzzle prepro) {
-		int remainingFE = 0;
-		for (int i = 0; i < atoms.length; ++i)
-			remainingFE += freeElectrons(atoms, i);
-		int boundCount = (prepro.maxFreeElectrons - remainingFE)/2;
-
 		//Sort atom coordinates in each element range.  We'll remap bond indices
 		//into the (sorted) packed order.
-		DataContainer d = DataContainer.create(atoms.length + boundCount);
+		DataContainer d = DataContainer.create(atoms.length + totalBonds(atoms));
 		int i = 0;
 		for (int j = 0; j < atoms.length; ++j)
 			d.set(i++, coordByte(atoms, j));
@@ -302,6 +295,7 @@ public final class StateUnboxed {
 		setFreeElectrons(atoms, b, bfe-1);
 		setBonds(atoms, a, (char)(bonds(atoms, a) | (1 << b)));
 		setBonds(atoms, b, (char)(bonds(atoms, b) | (1 << a)));
+		setTotalBonds(atoms, totalBonds(atoms)+1);
 		return true;
 	}
 
@@ -312,7 +306,16 @@ public final class StateUnboxed {
 		setFreeElectrons(atoms, b, bfe+1);
 		setBonds(atoms, a, (char)(bonds(atoms, a) & ~(1 << b)));
 		setBonds(atoms, b, (char)(bonds(atoms, b) & ~(1 << a)));
+		setTotalBonds(atoms, totalBonds(atoms)-1);
 		return true;
+	}
+
+	private static int totalBonds(int[] atoms) {
+		return ((atoms[0] & TOTAL_BONDS) >>> numberOfTrailingZeros(TOTAL_BONDS));
+	}
+
+	private static void setTotalBonds(int[] atoms, int totalBonds) {
+		atoms[0] = (atoms[0] & ~TOTAL_BONDS) | (totalBonds << numberOfTrailingZeros(TOTAL_BONDS));
 	}
 
 	private static int row(int[] atoms, int atom) {
