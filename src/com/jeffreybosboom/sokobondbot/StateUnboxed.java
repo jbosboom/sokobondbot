@@ -21,7 +21,6 @@ public final class StateUnboxed {
 	private static final int ROW_MASK =		0b00000000_11110000_00000000_00000000;
 	private static final int COL_MASK =		0b00000000_00001111_00000000_00000000;
 	private static final int ELECTRON_MASK =0b00000111_00000000_00000000_00000000;
-	private static final int ELEMENT_MASK =	0b00111000_00000000_00000000_00000000;
 	private static final int COORD_MASK = ROW_MASK | COL_MASK;
 	private static final int PLAYER_ATOM = 0;
 	private final int[] atoms;
@@ -109,15 +108,12 @@ public final class StateUnboxed {
 	public StateUnboxed(Puzzle puzzle, PreprocessedPuzzle prepro) {
 		this.path = TwoLongPath.empty();
 		this.atoms = new int[puzzle.atoms().size()];
-		atoms[PLAYER_ATOM] = pack(puzzle.atoms().get(puzzle.playerAtom())) |
-				packFE(puzzle.atoms().get(puzzle.playerAtom()).maxElectrons()) |
+		atoms[PLAYER_ATOM] = packFE(puzzle.atoms().get(puzzle.playerAtom()).maxElectrons()) |
 				pack(puzzle.playerAtom());
 		int i = 1;
 		for (Coordinate c : prepro.initialAtomOrder) {
 			if (c.equals(puzzle.playerAtom())) continue;
-			atoms[i++] = pack(puzzle.atoms().get(c)) |
-					packFE(puzzle.atoms().get(c).maxElectrons()) |
-					pack(c);
+			atoms[i++] = packFE(puzzle.atoms().get(c).maxElectrons()) |	pack(c);
 		}
 		for (Multiset.Entry<Pair<Coordinate, Coordinate>> entry : puzzle.bonds().entrySet()) {
 			if (entry.getCount() > 1) throw new UnsupportedOperationException("multiple bonds not supported");
@@ -329,10 +325,6 @@ public final class StateUnboxed {
 
 	private static byte coordByte(int[] atoms, int atom) {
 		return (byte)((atoms[atom] & COORD_MASK) >> numberOfTrailingZeros(COORD_MASK));
-	}
-
-	private static int pack(Element e) {
-		return e.ordinal() << numberOfTrailingZeros(ELEMENT_MASK);
 	}
 
 	private static int packFE(int freeElectrons) {
